@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { 
@@ -6,9 +6,10 @@ import {
 } from 'recharts';
 import { 
   Bell, Search, Menu, LogOut, Wallet, ArrowUpRight, ArrowDownRight, 
-  Activity, Settings, CreditCard, Bitcoin, DollarSign, LineChart
+  Activity, Settings, CreditCard, Bitcoin, DollarSign, LineChart, Moon, Sun, MessageSquare, X, CheckCircle, Copy, Bot, Zap, TrendingUp, List, Upload
 } from 'lucide-react';
 import Logo from './Logo';
+import { useMockDB } from '../context/MockDBContext';
 
 const mockChartData = [
   { time: '00:00', price: 42000 },
@@ -32,13 +33,96 @@ const recentTransactions = [
   { id: 3, type: 'Sell', asset: 'ETH', amount: '1.5', date: 'Mar 12, 16:45', status: 'Completed' },
 ];
 
-export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLogout: () => void }) {
+export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: { user: FirebaseUser, onLogout: () => void, darkMode?: boolean, toggleDarkMode?: () => void }) {
+  const { users, transactions, registerUser, updateUserLogin, addTransaction } = useMockDB();
   const [activeTab, setActiveTab] = useState('Overview');
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [paymentDone, setPaymentDone] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositProof, setDepositProof] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawAddress, setWithdrawAddress] = useState('');
+  const [showBotConfig, setShowBotConfig] = useState(false);
+  const [botActive, setBotActive] = useState(false);
+  const [livePrices, setLivePrices] = useState({ BTC: 42500.00, ETH: 2800.00 });
+  const [orderBook, setOrderBook] = useState<{price: number, amount: number, type: 'buy'|'sell'}[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      registerUser(user.uid, user.email || 'unknown@example.com');
+      updateUserLogin(user.uid);
+    }
+  }, [user]);
+
+  const currentUserData = users.find(u => u.id === user.uid) || { balance: 0 };
+  const userTransactions = transactions.filter(t => t.userId === user.uid);
+
+  const handleDepositSubmit = () => {
+    if (!depositAmount || isNaN(Number(depositAmount))) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    addTransaction({
+      userId: user.uid,
+      userEmail: user.email || 'unknown@example.com',
+      type: 'Deposit',
+      amount: Number(depositAmount),
+      proof: depositProof,
+      reference: 'DEP' + Math.floor(Math.random() * 1000000)
+    });
+    setPaymentDone(true);
+  };
+
+  const handleWithdrawSubmit = () => {
+    if (!withdrawAmount || isNaN(Number(withdrawAmount))) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    if (Number(withdrawAmount) > currentUserData.balance) {
+      alert('Insufficient balance');
+      return;
+    }
+    if (!withdrawAddress) {
+      alert('Please enter a withdrawal address');
+      return;
+    }
+    addTransaction({
+      userId: user.uid,
+      userEmail: user.email || 'unknown@example.com',
+      type: 'Withdraw',
+      amount: Number(withdrawAmount),
+      reference: withdrawAddress
+    });
+    alert('Withdrawal request submitted successfully. It is now pending admin approval.');
+    setShowWithdraw(false);
+    setWithdrawAmount('');
+    setWithdrawAddress('');
+  };
+
+  useEffect(() => {
+    const generateOrders = () => Array.from({length: 8}).map(() => ({
+      price: 42500 + (Math.random() * 100 - 50),
+      amount: Number((Math.random() * 2).toFixed(4)),
+      type: Math.random() > 0.5 ? 'buy' : 'sell' as 'buy'|'sell'
+    })).sort((a, b) => b.price - a.price);
+    
+    setOrderBook(generateOrders());
+
+    const interval = setInterval(() => {
+      setLivePrices(prev => ({
+        BTC: prev.BTC + (Math.random() * 20 - 10),
+        ETH: prev.ETH + (Math.random() * 5 - 2.5)
+      }));
+      setOrderBook(generateOrders());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
+    <div className={`min-h-screen flex flex-col md:flex-row font-sans ${darkMode ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'}`}>
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-white border-r border-slate-200 hidden md:flex flex-col">
+      <aside className={`w-full md:w-64 border-r hidden md:flex flex-col transition-colors ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl shadow-md shadow-red-500/20">
             <Logo className="w-full h-full" />
@@ -53,8 +137,8 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
               onClick={() => setActiveTab(item)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                 activeTab === item 
-                  ? 'bg-red-50 text-red-600' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? (darkMode ? 'bg-red-500/10 text-red-500' : 'bg-red-50 text-red-600')
+                  : (darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
               }`}
             >
               {item === 'Overview' && <Activity size={20} />}
@@ -67,14 +151,14 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+        <div className={`p-4 border-t transition-colors ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
+          <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
             <Settings size={20} />
             Settings
           </button>
           <button 
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all mt-1"
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mt-1 ${darkMode ? 'text-red-500 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'}`}
           >
             <LogOut size={20} />
             Log Out
@@ -85,7 +169,7 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+        <header className={`backdrop-blur-md border-b px-6 py-4 flex items-center justify-between sticky top-0 z-20 transition-colors ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
           <div className="flex items-center gap-4 md:hidden">
             <div className="w-8 h-8 rounded-lg">
               <Logo className="w-full h-full" />
@@ -95,16 +179,30 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
           
           <h1 className="text-xl font-semibold hidden md:block">{activeTab}</h1>
 
+          <div className="hidden lg:flex items-center gap-6 text-sm">
+            <div className="flex flex-col">
+              <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>BTC/USDT</span>
+              <span className={`font-mono font-bold ${livePrices.BTC > 42500 ? 'text-emerald-500' : 'text-red-500'}`}>${livePrices.BTC.toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>ETH/USDT</span>
+              <span className={`font-mono font-bold ${livePrices.ETH > 2800 ? 'text-emerald-500' : 'text-red-500'}`}>${livePrices.ETH.toFixed(2)}</span>
+            </div>
+          </div>
+
           <div className="flex items-center gap-4">
             <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} size={18} />
               <input 
                 type="text" 
                 placeholder="Search assets..." 
-                className="pl-10 pr-4 py-2 bg-slate-100 border-transparent rounded-full text-sm focus:bg-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all outline-none w-64"
+                className={`pl-10 pr-4 py-2 border-transparent rounded-full text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all outline-none w-64 ${darkMode ? 'bg-slate-800 text-white focus:bg-slate-900' : 'bg-slate-100 text-slate-900 focus:bg-white'}`}
               />
             </div>
-            <button className="relative p-2 text-slate-500 hover:text-slate-900 transition-colors">
+            <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+              {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button className={`relative p-2 transition-colors rounded-full ${darkMode ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
               <Bell size={20} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
@@ -131,12 +229,12 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
             {/* Top Stats Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Total Balance Card - Glass Effect */}
-              <div className="md:col-span-2 bg-white/70 backdrop-blur-xl border border-slate-200/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 relative overflow-hidden">
+              <div className={`md:col-span-2 backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 relative overflow-hidden transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                   <div>
                     <p className="text-slate-500 font-medium mb-1">Total Portfolio Value</p>
-                    <h2 className="text-4xl font-bold tracking-tight">$34,700.00</h2>
+                    <h2 className="text-4xl font-bold tracking-tight">${currentUserData.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="flex items-center text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
                         <ArrowUpRight size={16} className="mr-1" />
@@ -146,46 +244,66 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
                     </div>
                   </div>
                   <div className="flex gap-3 w-full md:w-auto">
-                    <button className="flex-1 md:flex-none bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20">
+                    <button onClick={() => setShowDeposit(true)} className="flex-1 md:flex-none bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20">
                       Deposit
                     </button>
-                    <button className="flex-1 md:flex-none bg-white border border-slate-200 hover:border-slate-300 text-slate-700 px-6 py-2.5 rounded-xl font-medium transition-all shadow-sm">
+                    <button onClick={() => setShowWithdraw(true)} className={`flex-1 md:flex-none border px-6 py-2.5 rounded-xl font-medium transition-all shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700 hover:border-slate-600 text-slate-200' : 'bg-white border-slate-200 hover:border-slate-300 text-slate-700'}`}>
                       Withdraw
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Quick Action Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-slate-900/10">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-                <h3 className="font-semibold mb-4 text-slate-200 relative z-10">Quick Buy</h3>
-                <div className="space-y-4 relative z-10">
-                  <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex justify-between items-center">
-                    <span className="text-slate-400">Pay</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">1,000</span>
-                      <span className="text-slate-400 text-sm">USD</span>
-                    </div>
+              {/* Trading Bot Card */}
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-slate-900/10 flex flex-col justify-between">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div>
+                  <div className="flex items-center gap-2 mb-4 relative z-10">
+                    <Bot className="text-red-400" size={24} />
+                    <h3 className="font-semibold text-slate-200">AI Trading Bot</h3>
                   </div>
-                  <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 flex justify-between items-center">
-                    <span className="text-slate-400">Receive</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">0.022</span>
-                      <span className="text-slate-400 text-sm">BTC</span>
+                  {botActive ? (
+                    <div className="space-y-3 relative z-10">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 text-sm">Status</span>
+                        <span className="text-emerald-400 text-sm font-medium flex items-center gap-1 animate-pulse"><Zap size={14}/> Running</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 text-sm">Pair</span>
+                        <span className="font-medium">BTC/USDT</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 text-sm">24h Profit</span>
+                        <span className="text-emerald-400 font-medium">+$142.50</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 text-sm">Auto-Trades</span>
+                        <span className="font-medium">24</span>
+                      </div>
                     </div>
-                  </div>
-                  <button className="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-medium transition-all">
-                    Buy BTC
-                  </button>
+                  ) : (
+                    <div className="space-y-2 relative z-10">
+                      <p className="text-sm text-slate-400">Automate your transactions with our high-frequency grid trading bot.</p>
+                      <ul className="text-sm text-slate-300 space-y-1 mt-2">
+                        <li className="flex items-center gap-2"><CheckCircle size={14} className="text-red-400"/> Buy low, sell high automatically</li>
+                        <li className="flex items-center gap-2"><CheckCircle size={14} className="text-red-400"/> 24/7 market monitoring</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
+                <button 
+                  onClick={() => botActive ? setBotActive(false) : setShowBotConfig(true)} 
+                  className={`w-full py-3 rounded-xl font-medium transition-all relative z-10 mt-4 ${botActive ? 'bg-slate-700 hover:bg-slate-600 text-white' : 'bg-red-600 hover:bg-red-500 text-white'}`}
+                >
+                  {botActive ? 'Stop Bot' : 'Start Auto-Trading'}
+                </button>
               </div>
             </div>
 
             {/* Chart and Assets Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Chart */}
-              <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-slate-200/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6">
+              <div className={`lg:col-span-2 backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h3 className="font-semibold text-lg">Market Overview</h3>
@@ -247,7 +365,7 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
               </div>
 
               {/* Assets List */}
-              <div className="bg-white/70 backdrop-blur-xl border border-slate-200/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6">
+              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-semibold text-lg">Your Assets</h3>
                   <button className="text-sm text-red-600 font-medium hover:text-red-700">View All</button>
@@ -276,50 +394,285 @@ export default function Dashboard({ user, onLogout }: { user: FirebaseUser, onLo
               </div>
             </div>
 
-            {/* Recent Transactions */}
-            <div className="bg-white/70 backdrop-blur-xl border border-slate-200/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6">
-              <h3 className="font-semibold text-lg mb-6">Recent Transactions</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-slate-500 uppercase bg-slate-50/50 border-b border-slate-100">
-                    <tr>
-                      <th className="px-4 py-3 font-medium rounded-tl-xl">Type</th>
-                      <th className="px-4 py-3 font-medium">Asset</th>
-                      <th className="px-4 py-3 font-medium">Amount</th>
-                      <th className="px-4 py-3 font-medium">Date</th>
-                      <th className="px-4 py-3 font-medium rounded-tr-xl text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentTransactions.map((tx) => (
-                      <tr key={tx.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
-                        <td className="px-4 py-4 font-medium">
-                          <span className={`inline-flex items-center gap-1.5 ${
-                            tx.type === 'Buy' ? 'text-emerald-600' : 
-                            tx.type === 'Sell' ? 'text-red-600' : 'text-blue-600'
-                          }`}>
-                            {tx.type === 'Buy' ? <ArrowDownRight size={16} /> : 
-                             tx.type === 'Sell' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                            {tx.type}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 font-medium">{tx.asset}</td>
-                        <td className="px-4 py-4">{tx.amount}</td>
-                        <td className="px-4 py-4 text-slate-500">{tx.date}</td>
-                        <td className="px-4 py-4 text-right">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
-                            {tx.status}
-                          </span>
-                        </td>
+            {/* Live Market Data */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Order Book */}
+              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2"><List size={20}/> Live Order Book (BTC/USDT)</h3>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-slate-500 font-medium mb-2 px-2">
+                    <span>Price (USDT)</span>
+                    <span>Amount (BTC)</span>
+                    <span>Total</span>
+                  </div>
+                  {orderBook.filter(o => o.type === 'sell').slice(0,4).map((order, i) => (
+                    <div key={`sell-${i}`} className="flex justify-between text-sm px-2 py-1 rounded hover:bg-red-500/5 cursor-pointer relative overflow-hidden">
+                      <div className="absolute right-0 top-0 bottom-0 bg-red-500/10" style={{width: `${(order.amount / 2) * 100}%`}}></div>
+                      <span className="text-red-500 font-mono relative z-10">{order.price.toFixed(2)}</span>
+                      <span className="font-mono relative z-10">{order.amount.toFixed(4)}</span>
+                      <span className="font-mono text-slate-500 relative z-10">{(order.price * order.amount).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  <div className={`py-2 text-center font-bold text-lg font-mono border-y transition-colors my-2 flex items-center justify-center gap-2 ${darkMode ? 'border-slate-800 text-white' : 'border-slate-200 text-slate-900'}`}>
+                    ${livePrices.BTC.toFixed(2)} <TrendingUp size={18} className="text-emerald-500" />
+                  </div>
+                  {orderBook.filter(o => o.type === 'buy').slice(0,4).map((order, i) => (
+                    <div key={`buy-${i}`} className="flex justify-between text-sm px-2 py-1 rounded hover:bg-emerald-500/5 cursor-pointer relative overflow-hidden">
+                      <div className="absolute right-0 top-0 bottom-0 bg-emerald-500/10" style={{width: `${(order.amount / 2) * 100}%`}}></div>
+                      <span className="text-emerald-500 font-mono relative z-10">{order.price.toFixed(2)}</span>
+                      <span className="font-mono relative z-10">{order.amount.toFixed(4)}</span>
+                      <span className="font-mono text-slate-500 relative z-10">{(order.price * order.amount).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Transactions */}
+              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
+                <h3 className="font-semibold text-lg mb-6">Recent Transactions</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className={`text-xs uppercase border-b ${darkMode ? 'text-slate-400 bg-slate-800/50 border-slate-800' : 'text-slate-500 bg-slate-50/50 border-slate-100'}`}>
+                      <tr>
+                        <th className="px-4 py-3 font-medium rounded-tl-xl">Type</th>
+                        <th className="px-4 py-3 font-medium">Asset</th>
+                        <th className="px-4 py-3 font-medium">Amount</th>
+                        <th className="px-4 py-3 font-medium rounded-tr-xl text-right">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {userTransactions.slice(0, 5).map((tx) => (
+                        <tr key={tx.id} className={`border-b last:border-0 transition-colors ${darkMode ? 'border-slate-800/50 hover:bg-slate-800/50' : 'border-slate-50 hover:bg-slate-50/50'}`}>
+                          <td className="px-4 py-4 font-medium">
+                            <span className={`inline-flex items-center gap-1.5 ${
+                              tx.type === 'Deposit' ? 'text-emerald-500' : 'text-red-500'
+                            }`}>
+                              {tx.type === 'Deposit' ? <ArrowDownRight size={16} /> : <ArrowUpRight size={16} />}
+                              {tx.type}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 font-medium">USD</td>
+                          <td className="px-4 py-4">${tx.amount.toLocaleString()}</td>
+                          <td className="px-4 py-4 text-right">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                              tx.status === 'Approved' ? (darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700') :
+                              tx.status === 'Rejected' ? (darkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-700') :
+                              (darkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-700')
+                            }`}>
+                              {tx.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {userTransactions.length === 0 && (
+                        <tr>
+                          <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No recent transactions</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </motion.div>
         </div>
       </main>
+
+      {/* Deposit Modal */}
+      {showDeposit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`w-full max-w-md p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Deposit Funds</h3>
+              <button onClick={() => { setShowDeposit(false); setPaymentDone(false); }} className={`p-2 rounded-full ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            {paymentDone ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle size={32} />
+                </div>
+                <h4 className="text-lg font-bold mb-2">Payment Confirmed!</h4>
+                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Your deposit is being processed and will reflect in your balance shortly.</p>
+                <button onClick={() => { setShowDeposit(false); setPaymentDone(false); }} className="mt-6 w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-medium transition-all">
+                  Back to Dashboard
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Please transfer the exact amount you wish to deposit to the bank account below.
+                </p>
+                
+                <div className={`p-4 rounded-2xl space-y-4 ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Bank Name</p>
+                    <p className="font-semibold text-lg">OPay</p>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Account Number</p>
+                    <div className="flex items-center justify-between">
+                      <p className="font-mono text-xl font-bold tracking-wider text-red-500">9136806231</p>
+                      <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`} title="Copy Account Number">
+                        <Copy size={18} />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Account Name</p>
+                    <p className="font-semibold">Adeniji samuel Temiloluwa</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Amount Transferred (USD)</label>
+                    <input 
+                      type="number" 
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="e.g. 1000"
+                      className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Proof of Payment (Optional URL)</label>
+                    <div className="relative">
+                      <Upload className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} size={18} />
+                      <input 
+                        type="text" 
+                        value={depositProof}
+                        onChange={(e) => setDepositProof(e.target.value)}
+                        placeholder="Link to receipt screenshot"
+                        className={`w-full pl-10 p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={handleDepositSubmit} className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20 flex items-center justify-center gap-2">
+                  <CheckCircle size={20} />
+                  Payment Done
+                </button>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+
+      {/* Withdraw Modal */}
+      {showWithdraw && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`w-full max-w-md p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Withdraw Funds</h3>
+              <button onClick={() => setShowWithdraw(false)} className={`p-2 rounded-full ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              <div className={`p-4 rounded-2xl ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+                <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Available Balance</p>
+                <p className="text-2xl font-bold text-emerald-500">${currentUserData.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Amount to Withdraw (USD)</label>
+                  <input 
+                    type="number" 
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    placeholder="e.g. 500"
+                    className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Withdrawal Address (USDT TRC20)</label>
+                  <input 
+                    type="text" 
+                    value={withdrawAddress}
+                    onChange={(e) => setWithdrawAddress(e.target.value)}
+                    placeholder="Enter wallet address"
+                    className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                  />
+                </div>
+              </div>
+
+              <button onClick={handleWithdrawSubmit} className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20">
+                Submit Withdrawal Request
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Trading Bot Config Modal */}
+      {showBotConfig && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`w-full max-w-md p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-2">
+                <Bot className="text-red-500" size={24} />
+                <h3 className="text-xl font-bold">Configure Trading Bot</h3>
+              </div>
+              <button onClick={() => setShowBotConfig(false)} className={`p-2 rounded-full ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Trading Pair</label>
+                <select className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}>
+                  <option>BTC/USDT</option>
+                  <option>ETH/USDT</option>
+                </select>
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Investment Amount (USDT)</label>
+                <input type="number" defaultValue={1000} className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Lower Price</label>
+                  <input type="number" defaultValue={40000} className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Upper Price</label>
+                  <input type="number" defaultValue={45000} className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} />
+                </div>
+              </div>
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Grid Number</label>
+                <input type="number" defaultValue={20} className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} />
+              </div>
+              
+              <button 
+                onClick={() => { setBotActive(true); setShowBotConfig(false); }} 
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20 mt-4"
+              >
+                Create Bot
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
