@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { motion } from 'motion/react';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { User as FirebaseUser } from 'firebase/auth';
 import { 
-  Users, Activity, CreditCard, BarChart2, LogOut, Search, CheckCircle, XCircle, Edit, Download, Moon, Sun, ShieldAlert
+  Users, Activity, CreditCard, BarChart2, LogOut, Search, CheckCircle, XCircle, Edit, Download, Moon, Sun, ShieldAlert, Menu, X
 } from 'lucide-react';
 import { useMockDB, Transaction, UserData } from '../context/MockDBContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -11,19 +11,80 @@ import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMode }: { user: FirebaseUser, onLogout: () => void, darkMode?: boolean, toggleDarkMode?: () => void }) {
   const [activeTab, setActiveTab] = useState('Users');
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [adminUsername, setAdminUsername] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [editBalanceModal, setEditBalanceModal] = useState(false);
+  const [editBalanceUserId, setEditBalanceUserId] = useState('');
+  const [editBalanceAmount, setEditBalanceAmount] = useState('');
+  
   const { users, transactions, activities, updateTransactionStatus, updateUserBalance } = useMockDB();
   const navigate = useNavigate();
 
-  // Redirect if not admin (using the provided email)
-  if (user.email !== 'samadeniji852@gmail.com') {
+  useEffect(() => {
+    if (sessionStorage.getItem('adminAuth') === 'true') {
+      setIsAdminLoggedIn(true);
+    }
+  }, []);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminUsername === 'Admin' && adminPassword === '12345') {
+      setIsAdminLoggedIn(true);
+      sessionStorage.setItem('adminAuth', 'true');
+      setLoginError('');
+    } else {
+      setLoginError('Invalid credentials');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminLoggedIn(false);
+    sessionStorage.removeItem('adminAuth');
+  };
+
+  if (!isAdminLoggedIn) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'}`}>
-        <ShieldAlert size={64} className="text-red-500 mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-        <p className="text-slate-500 mb-6">You do not have permission to view this page.</p>
-        <button onClick={() => navigate('/')} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl font-medium transition-all">
-          Return to Dashboard
-        </button>
+        <div className={`p-8 rounded-3xl shadow-xl w-full max-w-md ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'}`}>
+          <div className="flex justify-center mb-6">
+            <div className="w-16 h-16 rounded-2xl shadow-md shadow-red-500/20">
+              <Logo className="w-full h-full" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Username</label>
+              <input 
+                type="text" 
+                value={adminUsername}
+                onChange={(e) => setAdminUsername(e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                placeholder="Enter username"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Password</label>
+              <input 
+                type="password" 
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                placeholder="Enter password"
+              />
+            </div>
+            {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
+            <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20 mt-4">
+              Login to Admin Panel
+            </button>
+            <button type="button" onClick={() => navigate('/')} className={`w-full px-6 py-3 rounded-xl font-medium transition-all mt-2 ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+              Back to User View
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
@@ -39,9 +100,15 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
   const handleEditBalance = (id: string) => {
     const userToEdit = users.find(u => u.id === id);
     if (!userToEdit) return;
-    const newBalance = prompt(`Enter new balance for ${userToEdit.email}:`, userToEdit.balance.toString());
-    if (newBalance !== null && !isNaN(Number(newBalance))) {
-      updateUserBalance(id, Number(newBalance));
+    setEditBalanceUserId(id);
+    setEditBalanceAmount(userToEdit.balance.toString());
+    setEditBalanceModal(true);
+  };
+
+  const submitEditBalance = () => {
+    if (editBalanceAmount !== '' && !isNaN(Number(editBalanceAmount))) {
+      updateUserBalance(editBalanceUserId, Number(editBalanceAmount));
+      setEditBalanceModal(false);
     }
   };
 
@@ -146,8 +213,73 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                 'A'
               )}
             </div>
+            <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-500">
+              <Menu size={24} />
+            </button>
           </div>
         </header>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex justify-end md:hidden"
+            >
+              <div className="absolute inset-0 bg-black/50" onClick={() => setIsMenuOpen(false)} />
+              <motion.div 
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className={`relative w-64 h-full p-6 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-900' : 'bg-white'}`}
+              >
+                <div className="flex justify-between items-center mb-8">
+                  <span className="text-xl font-bold">Menu</span>
+                  <button onClick={() => setIsMenuOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <nav className="flex-1 space-y-2">
+                  <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                    <Activity size={20} />
+                    User Dashboard
+                  </button>
+                  {['Users', 'Transactions', 'Activity', 'Analytics'].map((item) => (
+                    <button
+                      key={item}
+                      onClick={() => { setActiveTab(item); setIsMenuOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                        activeTab === item 
+                          ? (darkMode ? 'bg-red-500/10 text-red-500' : 'bg-red-50 text-red-600')
+                          : (darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
+                      }`}
+                    >
+                      {item === 'Users' && <Users size={20} />}
+                      {item === 'Transactions' && <CreditCard size={20} />}
+                      {item === 'Activity' && <Activity size={20} />}
+                      {item === 'Analytics' && <BarChart2 size={20} />}
+                      {item}
+                    </button>
+                  ))}
+                </nav>
+                
+                <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <button 
+                    onClick={() => { handleAdminLogout(); setIsMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-red-500 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'}`}
+                  >
+                    <LogOut size={20} />
+                    Log Out
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -180,7 +312,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                         <tr key={u.id} className={`border-b last:border-0 transition-colors ${darkMode ? 'border-slate-800/50 hover:bg-slate-800/50' : 'border-slate-50 hover:bg-slate-50/50'}`}>
                           <td className="px-4 py-4 font-mono text-xs">{u.id}</td>
                           <td className="px-4 py-4 font-medium">{u.email}</td>
-                          <td className="px-4 py-4 font-mono font-bold text-emerald-500">${u.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                          <td className="px-4 py-4 font-mono font-bold text-emerald-500">₦{u.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                           <td className="px-4 py-4 text-slate-500">{new Date(u.regDate).toLocaleDateString()}</td>
                           <td className="px-4 py-4 text-slate-500">{new Date(u.lastLogin).toLocaleString()}</td>
                           <td className="px-4 py-4 text-right">
@@ -213,7 +345,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                         <th className="px-4 py-3 font-medium">Type</th>
                         <th className="px-4 py-3 font-medium">Amount</th>
                         <th className="px-4 py-3 font-medium">Status</th>
-                        <th className="px-4 py-3 font-medium">Proof/Ref</th>
+                        <th className="px-4 py-3 font-medium">Details</th>
                         <th className="px-4 py-3 font-medium rounded-tr-xl text-right">Actions</th>
                       </tr>
                     </thead>
@@ -225,7 +357,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                           <td className="px-4 py-4 font-medium">
                             <span className={t.type === 'Deposit' ? 'text-emerald-500' : 'text-red-500'}>{t.type}</span>
                           </td>
-                          <td className="px-4 py-4 font-mono font-bold">${t.amount.toLocaleString()}</td>
+                          <td className="px-4 py-4 font-mono font-bold">₦{t.amount.toLocaleString()}</td>
                           <td className="px-4 py-4">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                               t.status === 'Approved' ? (darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700') :
@@ -235,7 +367,21 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                               {t.status}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-xs font-mono text-slate-500">{t.reference || 'N/A'}</td>
+                          <td className="px-4 py-4 text-xs text-slate-500">
+                            {t.type === 'Deposit' ? (
+                              <div className="flex flex-col gap-1">
+                                {t.bankName && <span>Bank: {t.bankName}</span>}
+                                {t.reference && <span>Ref: {t.reference}</span>}
+                                {t.proofLink && <a href={t.proofLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">View Proof</a>}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col gap-1">
+                                {t.bankName && <span>Bank: {t.bankName}</span>}
+                                {t.accountName && <span>Name: {t.accountName}</span>}
+                                {t.accountNumber && <span>Acct: {t.accountNumber}</span>}
+                              </div>
+                            )}
+                          </td>
                           <td className="px-4 py-4 text-right">
                             {t.status === 'Pending' && (
                               <div className="flex items-center justify-end gap-2">
@@ -285,7 +431,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                   </div>
                   <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
                     <p className="text-sm text-slate-500 mb-1">Total Funds Managed</p>
-                    <h3 className="text-3xl font-bold text-emerald-500">${users.reduce((acc, u) => acc + u.balance, 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
+                    <h3 className="text-3xl font-bold text-emerald-500">₦{users.reduce((acc, u) => acc + u.balance, 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
                   </div>
                   <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
                     <p className="text-sm text-slate-500 mb-1">Pending Transactions</p>
@@ -315,6 +461,42 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
           </motion.div>
         </div>
       </main>
+
+      {/* Edit Balance Modal */}
+      {editBalanceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={`w-full max-w-md p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold">Edit User Balance</h3>
+              <button onClick={() => setEditBalanceModal(false)} className={`p-2 rounded-full ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>New Balance (NGN)</label>
+                <input 
+                  type="number" 
+                  value={editBalanceAmount}
+                  onChange={(e) => setEditBalanceAmount(e.target.value)}
+                  placeholder="e.g. 50000"
+                  className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                />
+              </div>
+
+              <button onClick={submitEditBalance} className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20">
+                Update Balance
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
     </div>
   );
 }

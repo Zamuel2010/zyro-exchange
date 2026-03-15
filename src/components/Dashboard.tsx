@@ -22,14 +22,14 @@ const mockChartData = [
 ];
 
 const assets = [
-  { symbol: 'BTC', name: 'Bitcoin', balance: '0.45', value: '$20,250.00', change: '+2.4%', isPositive: true, icon: Bitcoin, color: 'text-orange-500', bg: 'bg-orange-100' },
-  { symbol: 'ETH', name: 'Ethereum', balance: '4.2', value: '$9,450.00', change: '+1.8%', isPositive: true, icon: Activity, color: 'text-blue-500', bg: 'bg-blue-100' },
-  { symbol: 'USDT', name: 'Tether', balance: '5,000', value: '$5,000.00', change: '0.0%', isPositive: true, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-100' },
+  { symbol: 'BTC', name: 'Bitcoin', balance: '0.45', value: '₦20,250,000.00', change: '+2.4%', isPositive: true, icon: Bitcoin, color: 'text-orange-500', bg: 'bg-orange-100' },
+  { symbol: 'ETH', name: 'Ethereum', balance: '4.2', value: '₦9,450,000.00', change: '+1.8%', isPositive: true, icon: Activity, color: 'text-blue-500', bg: 'bg-blue-100' },
+  { symbol: 'USDT', name: 'Tether', balance: '5,000', value: '₦5,000,000.00', change: '0.0%', isPositive: true, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-100' },
 ];
 
 const recentTransactions = [
   { id: 1, type: 'Buy', asset: 'BTC', amount: '0.05', date: 'Today, 14:30', status: 'Completed' },
-  { id: 2, type: 'Deposit', asset: 'USD', amount: '$2,000', date: 'Yesterday, 09:15', status: 'Completed' },
+  { id: 2, type: 'Deposit', asset: 'NGN', amount: '₦2,000,000', date: 'Yesterday, 09:15', status: 'Completed' },
   { id: 3, type: 'Sell', asset: 'ETH', amount: '1.5', date: 'Mar 12, 16:45', status: 'Completed' },
 ];
 
@@ -39,14 +39,26 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [paymentDone, setPaymentDone] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Deposit State
   const [depositAmount, setDepositAmount] = useState('');
-  const [depositProof, setDepositProof] = useState('');
+  const [depositBankName, setDepositBankName] = useState('');
+  const [depositReference, setDepositReference] = useState('');
+  const [depositProofLink, setDepositProofLink] = useState('');
+  
+  // Withdraw State
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawAddress, setWithdrawAddress] = useState('');
+  const [withdrawBankName, setWithdrawBankName] = useState('');
+  const [withdrawAccountName, setWithdrawAccountName] = useState('');
+  const [withdrawAccountNumber, setWithdrawAccountNumber] = useState('');
+  const [withdrawError, setWithdrawError] = useState('');
+
   const [showBotConfig, setShowBotConfig] = useState(false);
   const [botActive, setBotActive] = useState(false);
   const [livePrices, setLivePrices] = useState({ BTC: 42500.00, ETH: 2800.00 });
   const [orderBook, setOrderBook] = useState<{price: number, amount: number, type: 'buy'|'sell'}[]>([]);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -55,12 +67,15 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
     }
   }, [user]);
 
+  const [depositError, setDepositError] = useState('');
+
   const currentUserData = users.find(u => u.id === user.uid) || { balance: 0 };
   const userTransactions = transactions.filter(t => t.userId === user.uid);
 
   const handleDepositSubmit = () => {
+    setDepositError('');
     if (!depositAmount || isNaN(Number(depositAmount))) {
-      alert('Please enter a valid amount');
+      setDepositError('Please enter a valid amount');
       return;
     }
     addTransaction({
@@ -68,23 +83,25 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
       userEmail: user.email || 'unknown@example.com',
       type: 'Deposit',
       amount: Number(depositAmount),
-      proof: depositProof,
-      reference: 'DEP' + Math.floor(Math.random() * 1000000)
+      bankName: depositBankName,
+      reference: depositReference,
+      proofLink: depositProofLink
     });
     setPaymentDone(true);
   };
 
   const handleWithdrawSubmit = () => {
+    setWithdrawError('');
     if (!withdrawAmount || isNaN(Number(withdrawAmount))) {
-      alert('Please enter a valid amount');
+      setWithdrawError('Please enter a valid amount');
       return;
     }
     if (Number(withdrawAmount) > currentUserData.balance) {
-      alert('Insufficient balance');
+      setWithdrawError('Insufficient balance');
       return;
     }
-    if (!withdrawAddress) {
-      alert('Please enter a withdrawal address');
+    if (!withdrawBankName || !withdrawAccountName || !withdrawAccountNumber) {
+      setWithdrawError('Please fill in all bank details');
       return;
     }
     addTransaction({
@@ -92,12 +109,21 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
       userEmail: user.email || 'unknown@example.com',
       type: 'Withdraw',
       amount: Number(withdrawAmount),
-      reference: withdrawAddress
+      bankName: withdrawBankName,
+      accountName: withdrawAccountName,
+      accountNumber: withdrawAccountNumber
     });
-    alert('Withdrawal request submitted successfully. It is now pending admin approval.');
     setShowWithdraw(false);
     setWithdrawAmount('');
-    setWithdrawAddress('');
+    setWithdrawBankName('');
+    setWithdrawAccountName('');
+    setWithdrawAccountNumber('');
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText("9136806231");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   useEffect(() => {
@@ -152,9 +178,9 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
         </nav>
 
         <div className={`p-4 border-t transition-colors ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-          <button className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+          <button onClick={() => { window.location.href = '/admin'; }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
             <Settings size={20} />
-            Settings
+            Admin Panel
           </button>
           <button 
             onClick={onLogout}
@@ -182,11 +208,11 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
           <div className="hidden lg:flex items-center gap-6 text-sm">
             <div className="flex flex-col">
               <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>BTC/USDT</span>
-              <span className={`font-mono font-bold ${livePrices.BTC > 42500 ? 'text-emerald-500' : 'text-red-500'}`}>${livePrices.BTC.toFixed(2)}</span>
+              <span className={`font-mono font-bold ${livePrices.BTC > 42500 ? 'text-emerald-500' : 'text-red-500'}`}>₦{livePrices.BTC.toFixed(2)}</span>
             </div>
             <div className="flex flex-col">
               <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>ETH/USDT</span>
-              <span className={`font-mono font-bold ${livePrices.ETH > 2800 ? 'text-emerald-500' : 'text-red-500'}`}>${livePrices.ETH.toFixed(2)}</span>
+              <span className={`font-mono font-bold ${livePrices.ETH > 2800 ? 'text-emerald-500' : 'text-red-500'}`}>₦{livePrices.ETH.toFixed(2)}</span>
             </div>
           </div>
 
@@ -213,11 +239,68 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                 (user.displayName || user.email || 'U').charAt(0).toUpperCase()
               )}
             </div>
-            <button className="md:hidden p-2 text-slate-500">
+            <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-500">
               <Menu size={24} />
             </button>
           </div>
         </header>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex justify-end md:hidden"
+            >
+              <div className="absolute inset-0 bg-black/50" onClick={() => setIsMenuOpen(false)} />
+              <motion.div 
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className={`relative w-64 h-full p-6 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-900' : 'bg-white'}`}
+              >
+                <div className="flex justify-between items-center mb-8">
+                  <span className="text-xl font-bold">Menu</span>
+                  <button onClick={() => setIsMenuOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <nav className="flex-1 space-y-2">
+                  <button onClick={() => { setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'bg-red-500/10 text-red-500' : 'bg-red-50 text-red-600'}`}>
+                    <Activity size={20} />
+                    Dashboard
+                  </button>
+                  <button onClick={() => { window.location.href = '/admin'; }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                    <Settings size={20} />
+                    Admin Panel
+                  </button>
+                  <button onClick={() => { setShowDeposit(true); setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                    <ArrowDownRight size={20} />
+                    Deposit
+                  </button>
+                  <button onClick={() => { setShowWithdraw(true); setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                    <ArrowUpRight size={20} />
+                    Withdraw
+                  </button>
+                </nav>
+                
+                <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <button 
+                    onClick={() => { onLogout(); setIsMenuOpen(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-red-500 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'}`}
+                  >
+                    <LogOut size={20} />
+                    Log Out
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Dashboard Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
@@ -234,7 +317,7 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                   <div>
                     <p className="text-slate-500 font-medium mb-1">Total Portfolio Value</p>
-                    <h2 className="text-4xl font-bold tracking-tight">${currentUserData.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
+                    <h2 className="text-4xl font-bold tracking-tight">₦{currentUserData.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h2>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="flex items-center text-sm font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">
                         <ArrowUpRight size={16} className="mr-1" />
@@ -274,7 +357,7 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-400 text-sm">24h Profit</span>
-                        <span className="text-emerald-400 font-medium">+$142.50</span>
+                        <span className="text-emerald-400 font-medium">+₦142,500.00</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-400 text-sm">Auto-Trades</span>
@@ -344,7 +427,7 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                         axisLine={false} 
                         tickLine={false} 
                         tick={{ fill: '#64748b', fontSize: 12 }}
-                        tickFormatter={(value) => `$${value.toLocaleString()}`}
+                        tickFormatter={(value) => `₦${value.toLocaleString()}`}
                         dx={-10}
                       />
                       <Tooltip 
@@ -414,7 +497,7 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                     </div>
                   ))}
                   <div className={`py-2 text-center font-bold text-lg font-mono border-y transition-colors my-2 flex items-center justify-center gap-2 ${darkMode ? 'border-slate-800 text-white' : 'border-slate-200 text-slate-900'}`}>
-                    ${livePrices.BTC.toFixed(2)} <TrendingUp size={18} className="text-emerald-500" />
+                    ₦{livePrices.BTC.toFixed(2)} <TrendingUp size={18} className="text-emerald-500" />
                   </div>
                   {orderBook.filter(o => o.type === 'buy').slice(0,4).map((order, i) => (
                     <div key={`buy-${i}`} className="flex justify-between text-sm px-2 py-1 rounded hover:bg-emerald-500/5 cursor-pointer relative overflow-hidden">
@@ -451,8 +534,8 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                               {tx.type}
                             </span>
                           </td>
-                          <td className="px-4 py-4 font-medium">USD</td>
-                          <td className="px-4 py-4">${tx.amount.toLocaleString()}</td>
+                          <td className="px-4 py-4 font-medium">NGN</td>
+                          <td className="px-4 py-4">₦{tx.amount.toLocaleString()}</td>
                           <td className="px-4 py-4 text-right">
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                               tx.status === 'Approved' ? (darkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-700') :
@@ -519,8 +602,8 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                     <p className={`text-xs font-medium uppercase tracking-wider mb-1 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>Account Number</p>
                     <div className="flex items-center justify-between">
                       <p className="font-mono text-xl font-bold tracking-wider text-red-500">9136806231</p>
-                      <button className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`} title="Copy Account Number">
-                        <Copy size={18} />
+                      <button onClick={handleCopy} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-slate-700 text-slate-400' : 'hover:bg-slate-200 text-slate-500'}`} title="Copy Account Number">
+                        {copied ? <CheckCircle size={18} className="text-emerald-500" /> : <Copy size={18} />}
                       </button>
                     </div>
                   </div>
@@ -531,24 +614,49 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                 </div>
 
                 <div className="space-y-4">
+                  {depositError && (
+                    <div className="bg-red-500/10 text-red-500 p-3 rounded-xl text-sm border border-red-500/20">
+                      {depositError}
+                    </div>
+                  )}
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Amount Transferred (USD)</label>
+                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Amount Transferred (NGN)</label>
                     <input 
                       type="number" 
                       value={depositAmount}
                       onChange={(e) => setDepositAmount(e.target.value)}
-                      placeholder="e.g. 1000"
+                      placeholder="e.g. 100000"
                       className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
                     />
                   </div>
                   <div>
-                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Proof of Payment (Optional URL)</label>
+                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Your Bank Name</label>
+                    <input 
+                      type="text" 
+                      value={depositBankName}
+                      onChange={(e) => setDepositBankName(e.target.value)}
+                      placeholder="e.g. GTBank"
+                      className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Transfer Reference</label>
+                    <input 
+                      type="text" 
+                      value={depositReference}
+                      onChange={(e) => setDepositReference(e.target.value)}
+                      placeholder="e.g. Session ID or Ref"
+                      className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Proof Link (Screenshot URL)</label>
                     <div className="relative">
                       <Upload className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} size={18} />
                       <input 
                         type="text" 
-                        value={depositProof}
-                        onChange={(e) => setDepositProof(e.target.value)}
+                        value={depositProofLink}
+                        onChange={(e) => setDepositProofLink(e.target.value)}
                         placeholder="Link to receipt screenshot"
                         className={`w-full pl-10 p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
                       />
@@ -584,27 +692,52 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
             <div className="space-y-6">
               <div className={`p-4 rounded-2xl ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
                 <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Available Balance</p>
-                <p className="text-2xl font-bold text-emerald-500">${currentUserData.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                <p className="text-2xl font-bold text-emerald-500">₦{currentUserData.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
               </div>
 
               <div className="space-y-4">
+                {withdrawError && (
+                  <div className="bg-red-500/10 text-red-500 p-3 rounded-xl text-sm border border-red-500/20">
+                    {withdrawError}
+                  </div>
+                )}
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Amount to Withdraw (USD)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Amount to Withdraw (NGN)</label>
                   <input 
                     type="number" 
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="e.g. 500"
+                    placeholder="e.g. 50000"
                     className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Withdrawal Address (USDT TRC20)</label>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Bank Name</label>
                   <input 
                     type="text" 
-                    value={withdrawAddress}
-                    onChange={(e) => setWithdrawAddress(e.target.value)}
-                    placeholder="Enter wallet address"
+                    value={withdrawBankName}
+                    onChange={(e) => setWithdrawBankName(e.target.value)}
+                    placeholder="Enter bank name"
+                    className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Account Number</label>
+                  <input 
+                    type="text" 
+                    value={withdrawAccountNumber}
+                    onChange={(e) => setWithdrawAccountNumber(e.target.value)}
+                    placeholder="Enter account number"
+                    className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Account Name</label>
+                  <input 
+                    type="text" 
+                    value={withdrawAccountName}
+                    onChange={(e) => setWithdrawAccountName(e.target.value)}
+                    placeholder="Enter account name"
                     className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
                   />
                 </div>
@@ -645,8 +778,8 @@ export default function Dashboard({ user, onLogout, darkMode, toggleDarkMode }: 
                 </select>
               </div>
               <div>
-                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Investment Amount (USDT)</label>
-                <input type="number" defaultValue={1000} className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} />
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>Investment Amount (NGN)</label>
+                <input type="number" defaultValue={1000000} className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

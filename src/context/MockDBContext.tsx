@@ -11,6 +11,9 @@ export interface Transaction {
   proof?: string;
   reference?: string;
   notes?: string;
+  bankName?: string;
+  accountName?: string;
+  accountNumber?: string;
 }
 
 export interface UserData {
