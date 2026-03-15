@@ -1,0 +1,5 @@
+{
+  "name": "Zyro Exchange",
+  "description": "A centralized cryptocurrency exchange platform featuring a login/signup flow and a dashboard home page.",
+  "requestFramePermissions": []
+}
