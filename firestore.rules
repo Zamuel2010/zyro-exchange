@@ -8,6 +8,11 @@ service cloud.firestore {
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "samadeniji852@gmail.com" && request.auth.token.email_verified == true));
+    }
     function uidUnchanged() {
       return !('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid;
     }
@@ -23,17 +28,55 @@ service cloud.firestore {
 
     // Domain Validators
     function isValidUser(data) {
-      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'createdAt']) &&
+      return hasOnlyAllowedFields(['uid', 'email', 'displayName', 'balance', 'role', 'createdAt', 'lastLogin']) &&
              data.uid is string &&
              data.email is string && isValidEmail(data.email) &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
-             data.createdAt is timestamp;
+             data.balance is number && data.balance >= 0 &&
+             data.role in ['user', 'admin'] &&
+             data.createdAt is string &&
+             (!('lastLogin' in data) || data.lastLogin is string);
+    }
+
+    function isValidTransaction(data) {
+      return hasOnlyAllowedFields(['userId', 'userEmail', 'type', 'amount', 'status', 'date', 'proof', 'reference', 'notes', 'bankName', 'accountName', 'accountNumber']) &&
+             data.userId is string &&
+             data.userEmail is string && isValidEmail(data.userEmail) &&
+             data.type in ['Deposit', 'Withdraw'] &&
+             data.amount is number && data.amount > 0 &&
+             data.status in ['Pending', 'Approved', 'Rejected'] &&
+             data.date is string &&
+             (!('proof' in data) || (data.proof is string && data.proof.size() < 1000)) &&
+             (!('reference' in data) || (data.reference is string && data.reference.size() < 100)) &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() < 1000)) &&
+             (!('bankName' in data) || (data.bankName is string && data.bankName.size() < 100)) &&
+             (!('accountName' in data) || (data.accountName is string && data.accountName.size() < 100)) &&
+             (!('accountNumber' in data) || (data.accountNumber is string && data.accountNumber.size() < 50));
+    }
+
+    function isValidActivity(data) {
+      return hasOnlyAllowedFields(['userId', 'userEmail', 'action', 'date']) &&
+             data.userId is string &&
+             data.userEmail is string && isValidEmail(data.userEmail) &&
+             data.action is string && data.action.size() < 500 &&
+             data.date is string;
     }
 
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(request.resource.data) && uidUnchanged();
-      allow update: if isOwner(userId) && isValidUser(request.resource.data) && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt;
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && uidUnchanged() && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && uidNotModified() && request.resource.data.createdAt == resource.data.createdAt && (request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && (request.auth.uid == resource.data.userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId && isValidTransaction(request.resource.data) && request.resource.data.status == 'Pending';
+      allow update: if isAdmin() && isValidTransaction(request.resource.data);
+    }
+
+    match /activities/{activityId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.userId && isValidActivity(request.resource.data);
     }
   }
 }

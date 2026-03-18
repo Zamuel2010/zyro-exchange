@@ -4,7 +4,7 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { 
   Users, Activity, CreditCard, BarChart2, LogOut, Search, CheckCircle, XCircle, Edit, Download, Moon, Sun, ShieldAlert, Menu, X
 } from 'lucide-react';
-import { useMockDB, Transaction, UserData } from '../context/MockDBContext';
+import { useDB, Transaction, UserData } from '../context/DBContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import Logo from './Logo';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +20,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
   const [editBalanceUserId, setEditBalanceUserId] = useState('');
   const [editBalanceAmount, setEditBalanceAmount] = useState('');
   
-  const { users, transactions, activities, updateTransactionStatus, updateUserBalance } = useMockDB();
+  const { users, transactions, activities, updateTransactionStatus, updateUserBalance } = useDB();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -47,10 +47,10 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
 
   if (!isAdminLoggedIn) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'}`}>
-        <div className={`p-8 rounded-3xl shadow-xl w-full max-w-md ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white border border-slate-200'}`}>
+      <div className={`min-h-screen flex flex-col items-center justify-center ${darkMode ? 'bg-zinc-950 text-zinc-50' : 'bg-zinc-50 text-zinc-900'}`}>
+        <div className={`p-8 rounded-3xl shadow-xl w-full max-w-md ${darkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white border border-zinc-200'}`}>
           <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-2xl shadow-md shadow-red-500/20">
+            <div className="w-16 h-16 rounded-2xl shadow-md shadow-brand-500/20">
               <Logo className="w-full h-full" />
             </div>
           </div>
@@ -62,7 +62,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                 type="text" 
                 value={adminUsername}
                 onChange={(e) => setAdminUsername(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all outline-none ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`}
                 placeholder="Enter username"
               />
             </div>
@@ -72,15 +72,15 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                 type="password" 
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all outline-none ${darkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}
+                className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all outline-none ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-zinc-50 border-zinc-200 text-zinc-900'}`}
                 placeholder="Enter password"
               />
             </div>
             {loginError && <p className="text-red-500 text-sm">{loginError}</p>}
-            <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20 mt-4">
+            <button type="submit" className="w-full bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-brand-600/20 mt-4">
               Login to Admin Panel
             </button>
-            <button type="button" onClick={() => navigate('/')} className={`w-full px-6 py-3 rounded-xl font-medium transition-all mt-2 ${darkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+            <button type="button" onClick={() => navigate('/')} className={`w-full px-6 py-3 rounded-xl font-medium transition-all mt-2 ${darkMode ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}>
               Back to User View
             </button>
           </form>
@@ -136,11 +136,11 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
   ];
 
   return (
-    <div className={`min-h-screen flex flex-col md:flex-row font-sans ${darkMode ? 'bg-slate-950 text-slate-50' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`min-h-screen flex flex-col md:flex-row font-sans ${darkMode ? 'bg-zinc-950 text-zinc-50' : 'bg-zinc-50 text-zinc-900'}`}>
       {/* Sidebar */}
-      <aside className={`w-full md:w-64 border-r hidden md:flex flex-col transition-colors ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+      <aside className={`w-full md:w-64 border-r hidden md:flex flex-col transition-colors ${darkMode ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-zinc-200'}`}>
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl shadow-md shadow-red-500/20">
+          <div className="w-10 h-10 rounded-xl shadow-md shadow-brand-500/20">
             <Logo className="w-full h-full" />
           </div>
           <span className="text-xl font-bold tracking-tight">Admin Panel</span>
@@ -153,8 +153,8 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
               onClick={() => setActiveTab(item)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                 activeTab === item 
-                  ? (darkMode ? 'bg-red-500/10 text-red-500' : 'bg-red-50 text-red-600')
-                  : (darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
+                  ? (darkMode ? 'bg-brand-500/10 text-brand-500' : 'bg-brand-50 text-brand-600')
+                  : (darkMode ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900')
               }`}
             >
               {item === 'Users' && <Users size={20} />}
@@ -166,14 +166,14 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
           ))}
         </nav>
 
-        <div className={`p-4 border-t transition-colors ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
-          <button onClick={() => navigate('/')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+        <div className={`p-4 border-t transition-colors ${darkMode ? 'border-zinc-800' : 'border-zinc-200'}`}>
+          <button onClick={() => navigate('/')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'}`}>
             <Logo className="w-5 h-5" />
             User Dashboard
           </button>
           <button 
             onClick={onLogout}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mt-1 ${darkMode ? 'text-red-500 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all mt-1 ${darkMode ? 'text-brand-500 hover:bg-brand-500/10' : 'text-brand-600 hover:bg-brand-50'}`}
           >
             <LogOut size={20} />
             Log Out
@@ -184,7 +184,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
-        <header className={`backdrop-blur-md border-b px-6 py-4 flex items-center justify-between sticky top-0 z-20 transition-colors ${darkMode ? 'bg-slate-900/80 border-slate-800' : 'bg-white/80 border-slate-200'}`}>
+        <header className={`backdrop-blur-md border-b px-6 py-4 flex items-center justify-between sticky top-0 z-20 transition-colors ${darkMode ? 'bg-zinc-900/80 border-zinc-800' : 'bg-white/80 border-zinc-200'}`}>
           <div className="flex items-center gap-4 md:hidden">
             <div className="w-8 h-8 rounded-lg">
               <Logo className="w-full h-full" />
@@ -196,24 +196,24 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
 
           <div className="flex items-center gap-4">
             <div className="relative hidden sm:block">
-              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} size={18} />
+              <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${darkMode ? 'text-zinc-500' : 'text-zinc-400'}`} size={18} />
               <input 
                 type="text" 
                 placeholder="Search..." 
-                className={`pl-10 pr-4 py-2 border-transparent rounded-full text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all outline-none w-64 ${darkMode ? 'bg-slate-800 text-white focus:bg-slate-900' : 'bg-slate-100 text-slate-900 focus:bg-white'}`}
+                className={`pl-10 pr-4 py-2 border-transparent rounded-full text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none w-64 ${darkMode ? 'bg-zinc-800 text-white focus:bg-zinc-900' : 'bg-zinc-100 text-zinc-900 focus:bg-white'}`}
               />
             </div>
-            <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'text-slate-400 hover:text-slate-200 hover:bg-slate-800' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+            <button onClick={toggleDarkMode} className={`p-2 rounded-full transition-colors ${darkMode ? 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'}`}>
               {darkMode ? <Sun size={20} /> : <Moon size={20} />}
             </button>
-            <div className="w-9 h-9 rounded-full bg-red-100 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center text-red-600 font-bold">
+            <div className="w-9 h-9 rounded-full bg-brand-100 border-2 border-white shadow-sm overflow-hidden flex items-center justify-center text-brand-600 font-bold">
               {user.photoURL ? (
                 <img src={user.photoURL} alt={user.displayName || 'Admin'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 'A'
               )}
             </div>
-            <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-slate-500">
+            <button onClick={() => setIsMenuOpen(true)} className="md:hidden p-2 text-zinc-500">
               <Menu size={24} />
             </button>
           </div>
@@ -234,17 +234,17 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className={`relative w-64 h-full p-6 flex flex-col shadow-2xl ${darkMode ? 'bg-slate-900' : 'bg-white'}`}
+                className={`relative w-64 h-full p-6 flex flex-col shadow-2xl ${darkMode ? 'bg-zinc-900' : 'bg-white'}`}
               >
                 <div className="flex justify-between items-center mb-8">
                   <span className="text-xl font-bold">Menu</span>
-                  <button onClick={() => setIsMenuOpen(false)} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <button onClick={() => setIsMenuOpen(false)} className="p-2 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
                     <X size={20} />
                   </button>
                 </div>
                 
                 <nav className="flex-1 space-y-2">
-                  <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}>
+                  <button onClick={() => { navigate('/'); setIsMenuOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900'}`}>
                     <Activity size={20} />
                     User Dashboard
                   </button>
@@ -254,8 +254,8 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                       onClick={() => { setActiveTab(item); setIsMenuOpen(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                         activeTab === item 
-                          ? (darkMode ? 'bg-red-500/10 text-red-500' : 'bg-red-50 text-red-600')
-                          : (darkMode ? 'text-slate-400 hover:bg-slate-800 hover:text-slate-200' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900')
+                          ? (darkMode ? 'bg-brand-500/10 text-brand-500' : 'bg-brand-50 text-brand-600')
+                          : (darkMode ? 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200' : 'text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900')
                       }`}
                     >
                       {item === 'Users' && <Users size={20} />}
@@ -267,10 +267,10 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                   ))}
                 </nav>
                 
-                <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800">
                   <button 
                     onClick={() => { handleAdminLogout(); setIsMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-red-500 hover:bg-red-500/10' : 'text-red-600 hover:bg-red-50'}`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${darkMode ? 'text-brand-500 hover:bg-brand-500/10' : 'text-brand-600 hover:bg-brand-50'}`}
                   >
                     <LogOut size={20} />
                     Log Out
@@ -290,14 +290,14 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
           >
             
             {activeTab === 'Users' && (
-              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
+              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-zinc-900/70 border-zinc-800/60' : 'bg-white/70 border-zinc-200/60'}`}>
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-semibold text-lg">Registered Users</h3>
-                  <span className="text-sm font-medium text-slate-500">Total: {users.length}</span>
+                  <span className="text-sm font-medium text-zinc-500">Total: {users.length}</span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className={`text-xs uppercase border-b ${darkMode ? 'text-slate-400 bg-slate-800/50 border-slate-800' : 'text-slate-500 bg-slate-50/50 border-slate-100'}`}>
+                    <thead className={`text-xs uppercase border-b ${darkMode ? 'text-zinc-400 bg-zinc-800/50 border-zinc-800' : 'text-zinc-500 bg-zinc-50/50 border-zinc-100'}`}>
                       <tr>
                         <th className="px-4 py-3 font-medium rounded-tl-xl">User ID</th>
                         <th className="px-4 py-3 font-medium">Email</th>
@@ -309,14 +309,14 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                     </thead>
                     <tbody>
                       {users.map((u) => (
-                        <tr key={u.id} className={`border-b last:border-0 transition-colors ${darkMode ? 'border-slate-800/50 hover:bg-slate-800/50' : 'border-slate-50 hover:bg-slate-50/50'}`}>
+                        <tr key={u.id} className={`border-b last:border-0 transition-colors ${darkMode ? 'border-zinc-800/50 hover:bg-zinc-800/50' : 'border-zinc-50 hover:bg-zinc-50/50'}`}>
                           <td className="px-4 py-4 font-mono text-xs">{u.id}</td>
                           <td className="px-4 py-4 font-medium">{u.email}</td>
                           <td className="px-4 py-4 font-mono font-bold text-emerald-500">₦{u.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                          <td className="px-4 py-4 text-slate-500">{new Date(u.regDate).toLocaleDateString()}</td>
-                          <td className="px-4 py-4 text-slate-500">{new Date(u.lastLogin).toLocaleString()}</td>
+                          <td className="px-4 py-4 text-zinc-500">{new Date(u.regDate).toLocaleDateString()}</td>
+                          <td className="px-4 py-4 text-zinc-500">{new Date(u.lastLogin).toLocaleString()}</td>
                           <td className="px-4 py-4 text-right">
-                            <button onClick={() => handleEditBalance(u.id)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors" title="Edit Balance">
+                            <button onClick={() => handleEditBalance(u.id)} className="p-2 text-zinc-400 hover:text-blue-500 transition-colors" title="Edit Balance">
                               <Edit size={18} />
                             </button>
                           </td>
@@ -329,16 +329,16 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
             )}
 
             {activeTab === 'Transactions' && (
-              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
+              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-zinc-900/70 border-zinc-800/60' : 'bg-white/70 border-zinc-200/60'}`}>
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="font-semibold text-lg">Transaction Tracking</h3>
-                  <button onClick={exportCSV} className="flex items-center gap-2 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl transition-colors dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                  <button onClick={exportCSV} className="flex items-center gap-2 text-sm font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-700 px-4 py-2 rounded-xl transition-colors dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700">
                     <Download size={16} /> Export CSV
                   </button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className={`text-xs uppercase border-b ${darkMode ? 'text-slate-400 bg-slate-800/50 border-slate-800' : 'text-slate-500 bg-slate-50/50 border-slate-100'}`}>
+                    <thead className={`text-xs uppercase border-b ${darkMode ? 'text-zinc-400 bg-zinc-800/50 border-zinc-800' : 'text-zinc-500 bg-zinc-50/50 border-zinc-100'}`}>
                       <tr>
                         <th className="px-4 py-3 font-medium rounded-tl-xl">Txn ID</th>
                         <th className="px-4 py-3 font-medium">User Email</th>
@@ -351,7 +351,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                     </thead>
                     <tbody>
                       {transactions.map((t) => (
-                        <tr key={t.id} className={`border-b last:border-0 transition-colors ${darkMode ? 'border-slate-800/50 hover:bg-slate-800/50' : 'border-slate-50 hover:bg-slate-50/50'}`}>
+                        <tr key={t.id} className={`border-b last:border-0 transition-colors ${darkMode ? 'border-zinc-800/50 hover:bg-zinc-800/50' : 'border-zinc-50 hover:bg-zinc-50/50'}`}>
                           <td className="px-4 py-4 font-mono text-xs">{t.id}</td>
                           <td className="px-4 py-4">{t.userEmail}</td>
                           <td className="px-4 py-4 font-medium">
@@ -367,7 +367,7 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
                               {t.status}
                             </span>
                           </td>
-                          <td className="px-4 py-4 text-xs text-slate-500">
+                          <td className="px-4 py-4 text-xs text-zinc-500">
                             {t.type === 'Deposit' ? (
                               <div className="flex flex-col gap-1">
                                 {t.bankName && <span>Bank: {t.bankName}</span>}
@@ -403,18 +403,18 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
             )}
 
             {activeTab === 'Activity' && (
-              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
+              <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-zinc-900/70 border-zinc-800/60' : 'bg-white/70 border-zinc-200/60'}`}>
                 <h3 className="font-semibold text-lg mb-6">Activity Log</h3>
                 <div className="space-y-4">
                   {activities.map((act) => (
-                    <div key={act.id} className={`flex items-start gap-4 p-4 rounded-2xl border ${darkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                    <div key={act.id} className={`flex items-start gap-4 p-4 rounded-2xl border ${darkMode ? 'bg-zinc-800/50 border-zinc-700' : 'bg-zinc-50 border-zinc-100'}`}>
                       <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 mt-1">
                         <Activity size={16} />
                       </div>
                       <div>
                         <p className="font-medium text-sm">{act.userEmail}</p>
-                        <p className={`text-sm mt-1 ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{act.action}</p>
-                        <p className="text-xs text-slate-500 mt-2">{new Date(act.date).toLocaleString()}</p>
+                        <p className={`text-sm mt-1 ${darkMode ? 'text-zinc-300' : 'text-zinc-600'}`}>{act.action}</p>
+                        <p className="text-xs text-zinc-500 mt-2">{new Date(act.date).toLocaleString()}</p>
                       </div>
                     </div>
                   ))}
@@ -425,21 +425,21 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
             {activeTab === 'Analytics' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
-                    <p className="text-sm text-slate-500 mb-1">Total Users</p>
+                  <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-zinc-900/70 border-zinc-800/60' : 'bg-white/70 border-zinc-200/60'}`}>
+                    <p className="text-sm text-zinc-500 mb-1">Total Users</p>
                     <h3 className="text-3xl font-bold">{users.length}</h3>
                   </div>
-                  <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
-                    <p className="text-sm text-slate-500 mb-1">Total Funds Managed</p>
+                  <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-zinc-900/70 border-zinc-800/60' : 'bg-white/70 border-zinc-200/60'}`}>
+                    <p className="text-sm text-zinc-500 mb-1">Total Funds Managed</p>
                     <h3 className="text-3xl font-bold text-emerald-500">₦{users.reduce((acc, u) => acc + u.balance, 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h3>
                   </div>
-                  <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
-                    <p className="text-sm text-slate-500 mb-1">Pending Transactions</p>
+                  <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-zinc-900/70 border-zinc-800/60' : 'bg-white/70 border-zinc-200/60'}`}>
+                    <p className="text-sm text-zinc-500 mb-1">Pending Transactions</p>
                     <h3 className="text-3xl font-bold text-amber-500">{transactions.filter(t => t.status === 'Pending').length}</h3>
                   </div>
                 </div>
 
-                <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-slate-900/70 border-slate-800/60' : 'bg-white/70 border-slate-200/60'}`}>
+                <div className={`backdrop-blur-xl border shadow-[0_8px_32px_0_rgba(0,0,0,0.03)] rounded-3xl p-6 transition-colors ${darkMode ? 'bg-zinc-900/70 border-zinc-800/60' : 'bg-white/70 border-zinc-200/60'}`}>
                   <h3 className="font-semibold text-lg mb-6">User Growth & Activity</h3>
                   <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -468,28 +468,28 @@ export default function AdminDashboard({ user, onLogout, darkMode, toggleDarkMod
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`w-full max-w-md p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}
+            className={`w-full max-w-md p-6 rounded-3xl shadow-2xl ${darkMode ? 'bg-zinc-900 border border-zinc-800' : 'bg-white'}`}
           >
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold">Edit User Balance</h3>
-              <button onClick={() => setEditBalanceModal(false)} className={`p-2 rounded-full ${darkMode ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-500'}`}>
+              <button onClick={() => setEditBalanceModal(false)} className={`p-2 rounded-full ${darkMode ? 'hover:bg-zinc-800 text-zinc-400' : 'hover:bg-zinc-100 text-zinc-500'}`}>
                 <X size={20} />
               </button>
             </div>
             
             <div className="space-y-4">
               <div>
-                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>New Balance (NGN)</label>
+                <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-zinc-400' : 'text-zinc-600'}`}>New Balance (NGN)</label>
                 <input 
                   type="number" 
                   value={editBalanceAmount}
                   onChange={(e) => setEditBalanceAmount(e.target.value)}
                   placeholder="e.g. 50000"
-                  className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-red-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-red-500'}`} 
+                  className={`w-full p-3 rounded-xl outline-none border ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white focus:border-brand-500' : 'bg-zinc-50 border-zinc-200 text-zinc-900 focus:border-brand-500'}`} 
                 />
               </div>
 
-              <button onClick={submitEditBalance} className="w-full bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-red-600/20">
+              <button onClick={submitEditBalance} className="w-full bg-brand-600 hover:bg-brand-700 text-white py-3.5 rounded-xl font-medium transition-all shadow-lg shadow-brand-600/20">
                 Update Balance
               </button>
             </div>

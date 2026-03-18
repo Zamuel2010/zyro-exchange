@@ -8,15 +8,58 @@
         "uid": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "balance": { "type": "number" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLogin": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "createdAt"]
+      "required": ["uid", "email", "balance", "role", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A deposit or withdrawal transaction",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "type": { "type": "string", "enum": ["Deposit", "Withdraw"] },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Rejected"] },
+        "date": { "type": "string", "format": "date-time" },
+        "proof": { "type": "string" },
+        "reference": { "type": "string" },
+        "notes": { "type": "string" },
+        "bankName": { "type": "string" },
+        "accountName": { "type": "string" },
+        "accountNumber": { "type": "string" }
+      },
+      "required": ["userId", "userEmail", "type", "amount", "status", "date"]
+    },
+    "Activity": {
+      "title": "Activity",
+      "description": "User activity log",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "action": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userEmail", "action", "date"]
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": "User",
-      "description": "User profiles"
+      "description": "User profiles and balances"
+    },
+    "transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Deposit and withdrawal requests"
+    },
+    "activities/{activityId}": {
+      "schema": "Activity",
+      "description": "Audit log of user actions"
     }
   }
 }
